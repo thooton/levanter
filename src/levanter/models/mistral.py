@@ -208,8 +208,9 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
         rope = precompute_rope(conf.head_axis, conf.seq_axis)
         return Mistral(conf, wte, blocks, ln_f, lm_head, mask, rope)
     @named_call
-    def __call__(self, x, key=None):
+    def __call__(self, x, attn_mask=None, *, key=None):
         del key
+        del attn_mask
         x = self.wte.take("vocab", x)
         x = self.blocks.fold(x, self.mask[0], self.rope)
         x = self.ln_f(x)
