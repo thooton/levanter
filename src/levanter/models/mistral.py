@@ -70,8 +70,8 @@ def precompute_mask(seq_axis, kv_seq_axis):
         return jax.lax.stop_gradient(mask)
 
 class FFN(eqx.Module, StateDictSerializationMixin):
-    model_axis: hax.Axis
-    embed_axis: hax.Axis
+    model_axis: hax.Axis = eqx.static_field()
+    embed_axis: hax.Axis = eqx.static_field()
     wg: hnn.Linear
     wu: hnn.Linear
     wd: hnn.Linear
@@ -93,7 +93,7 @@ class FFN(eqx.Module, StateDictSerializationMixin):
         return x
 
 class Attention(eqx.Module, StateDictSerializationMixin):
-    conf: MistralConfig
+    conf: MistralConfig = eqx.static_field()
     wq: hnn.Linear
     wk: hnn.Linear
     wv: hnn.Linear
@@ -144,9 +144,9 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         return y
 
 class RMSNorm(eqx.Module, StateDictSerializationMixin):
-    axis: hax.Axis
+    axis: hax.Axis = eqx.static_field()
+    eps: float = eqx.static_field()
     scale: hax.NamedArray
-    eps: float
     @staticmethod
     def init(axis, eps):
         scale = hax.ones(axis)
