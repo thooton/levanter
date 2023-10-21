@@ -38,6 +38,9 @@ class MistralConfig:
 
     model_type = property(lambda _: Mistral)
 
+    def build(_vocab_axis, key):
+        return Mistral.init(self, key)
+
 def precompute_rope(head_axis, seq_axis):
     assert (head_axis.size % 2) == 0
     head_half_axis = head_axis.resize(head_axis.size // 2)
