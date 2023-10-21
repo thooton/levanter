@@ -68,6 +68,8 @@ def precompute_mask(seq_axis, kv_seq_axis):
     return jax.lax.stop_gradient(mask)
 
 class FFN(eqx.Module, StateDictSerializationMixin):
+    model_axis: hax.Axis
+    embed_axis: hax.Axis
     wg: hnn.Linear
     wu: hnn.Linear
     wd: hnn.Linear
