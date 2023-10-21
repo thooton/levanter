@@ -42,14 +42,15 @@ class MistralConfig:
         return Mistral.init(self, key)
 
 def precompute_rope(head_axis, seq_axis):
-    assert (head_axis.size % 2) == 0
-    head_half_axis = head_axis.resize(head_axis.size // 2)
-    inv_freq = 1.0 / (10000.0 ** (hax.arange(head_half_axis, step=2) / head_axis.size))
-    freqs = hax.arange(seq_axis) * inv_freq.broadcast_axis(seq_axis)
-    emb = hax.concatenate(head_axis, (freqs, freqs))
-    sin = hax.sin(emb)
-    cos = hax.cos(emb)
-    return jax.lax.stop_gradient((sin, cos))
+    with jax.ensure_compile_time_eval():
+        assert (head_axis.size % 2) == 0
+        head_half_axis = head_axis.resize(head_axis.size // 2)
+        inv_freq = 1.0 / (10000.0 ** (hax.arange(head_half_axis, step=2) / head_axis.size))
+        freqs = hax.arange(seq_axis) * inv_freq.broadcast_axis(seq_axis)
+        emb = hax.concatenate(head_axis, (freqs, freqs))
+        sin = hax.sin(emb)
+        cos = hax.cos(emb)
+        return jax.lax.stop_gradient((sin, cos))
 
 def rotate_half(x):
     axis = x.axes[-1]
@@ -63,9 +64,10 @@ def apply_rope(x, rope):
     return (x * cos) + (rotate_half(x) * sin)
 
 def precompute_mask(seq_axis, kv_seq_axis):
-    mask = hax.full((seq_axis, kv_seq_axis), -1e9)
-    mask = hax.triu(mask, seq_axis, kv_seq_axis, 1)
-    return jax.lax.stop_gradient(mask)
+    with jax.ensure_compile_time_eval():
+        mask = hax.full((seq_axis, kv_seq_axis), -1e9)
+        mask = hax.triu(mask, seq_axis, kv_seq_axis, 1)
+        return jax.lax.stop_gradient(mask)
 
 class FFN(eqx.Module, StateDictSerializationMixin):
     model_axis: hax.Axis
