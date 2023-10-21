@@ -73,13 +73,16 @@ class FFN(eqx.Module, StateDictSerializationMixin):
     wd: hnn.Linear
     @staticmethod
     def init(model_axis, ff_axis, key):
-        wg = hnn.Linear.init(In=model_axis, Out=model_axis, key=key, use_bias=False)
+        self.model_axis = model_axis
+        self.embed_axis = model_axis.alias("embed_axis")
+        wg = hnn.Linear.init(In=self.embed_axis, Out=model_axis, key=key, use_bias=False)
         wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=key, use_bias=False)
         wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=key, use_bias=False)
         return FFN(wg, wu, wd)
     @named_call
     def __call__(self, x):
-        g, u = self.wg(x), self.wu(x)
+        g = self.wg(x.rename({self.model_axis: self.embed_axis}))
+        u = self.wu(x)
         u = hnn.relu(u)
         u *= u
         d = self.wd(u)
