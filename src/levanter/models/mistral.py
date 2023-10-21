@@ -206,7 +206,7 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
         lm_head = hnn.Linear.init(In=conf.model_axis, Out=conf.vocab_axis, key=kl, use_bias=False)
         mask = (precompute_mask(conf.seq_axis, conf.kv_seq_axis),)
         rope = precompute_rope(conf.head_axis, conf.seq_axis)
-        return Mistral(conf, wte, blocks, ln_f, lm_head, mask, rope)
+        return Mistral((conf,), wte, blocks, ln_f, lm_head, mask, rope)
     @named_call
     def __call__(self, x, attn_mask=None, *, key=None):
         del key
