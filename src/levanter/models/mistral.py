@@ -11,7 +11,7 @@ from levanter.models.lm_model import LmConfig, LmHeadModel
 
 @LmConfig.register_subclass("mistral")
 @dataclass(frozen=True)
-class MistralConfig:
+class MistralConfig(LmConfig):
     model_dim: int
     ff_dim: int
     query_count: int
@@ -33,12 +33,16 @@ class MistralConfig:
     head_axis = property(lambda self: hax.Axis(name="head", size=self.model_dim // self.query_count))
     vocab_axis = property(lambda self: hax.Axis(name="vocab", size=self.vocab_size))
     
-    Pos = property(lambda self: self.seq_axis)
-    KeyPos = property(lambda self: self.kv_seq_axis)
-
-    model_type = property(lambda _: Mistral)
-
-    def build(self, _vocab_axis, key):
+    @property
+    def model_type(cls):
+        return Mistral
+    @property
+    def KeyPos(self):
+        return self.kv_seq_axis
+    @property
+    def Pos(self):
+        return self.seq_axis
+    def build(self, Vocab, *, key):
         return Mistral.init(self, key)
 
 def precompute_rope(head_axis, seq_axis):
