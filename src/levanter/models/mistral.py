@@ -90,8 +90,7 @@ class FFN(eqx.Module, StateDictSerializationMixin):
     def __call__(self, x):
         g = self.wg(x.rename({self.model_axis: self.embed_axis}))
         u = self.wu(x)
-        u = hnn.relu(u)
-        u *= u
+        u = hax.square(hnn.relu(u))
         d = self.wd(u)
         x = hnn.sigmoid(g) * d
         return x
