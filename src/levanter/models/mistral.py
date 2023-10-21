@@ -63,7 +63,7 @@ def apply_rope(x, rope):
     return (x * cos) + (rotate_half(x) * sin)
 
 def precompute_mask(seq_axis, kv_seq_axis):
-    mask = hax.full((seq_axis, kv_seq_axis), -float("inf"))
+    mask = hax.full((seq_axis, kv_seq_axis), -1e9)
     mask = hax.triu(mask, seq_axis, kv_seq_axis, 1)
     return jax.lax.stop_gradient(mask)
 
