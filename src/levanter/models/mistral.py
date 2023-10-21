@@ -150,7 +150,7 @@ class RMSNorm(eqx.Module, StateDictSerializationMixin):
     @staticmethod
     def init(axis, eps):
         scale = hax.ones(axis)
-        return RMSNorm(axis, scale, eps)
+        return RMSNorm(axis, eps, scale)
     @named_call
     def __call__(self, x):
         dtype = x.dtype
