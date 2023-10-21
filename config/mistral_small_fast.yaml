@@ -1,0 +1,25 @@
+data: !include data/openwebtext_source.yaml
+model:
+  type: mistral
+  hidden_dim: 768
+  ff_dim: 2048
+  query_count: 16
+  kv_count: 4
+  layer_count: 12
+  seq_len: 1024
+  gradient_checkpointing: true
+trainer:
+  wandb:
+    project: "levanter"
+    tags: [ "openwebtext", "gpt2", "itest"]
+
+  mp: p=f32,c=bfloat16
+  model_axis_size: 1
+  per_device_parallelism: 8
+
+  train_batch_size: 256
+  num_train_steps: 20000
+optimizer:
+  learning_rate: 1E-3
+  weight_decay: 0.1
+  warmup: 0.01
