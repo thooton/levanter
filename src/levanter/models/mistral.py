@@ -175,7 +175,7 @@ class Block(eqx.Module, StateDictSerializationMixin):
         return x
 
 class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixin):
-    conf: MistralConfig
+    conf: tuple[MistralConfig]
     wte: hax.NamedArray
     blocks: Stacked[Block]
     ln_f: RMSNorm
@@ -184,13 +184,13 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
     rope: tuple[hax.NamedArray, hax.NamedArray]
     @property
     def config(self):
-        return self.conf
+        return self.conf[0]
     @property
     def vocab_size(self):
-        return self.conf.vocab_axis.size
+        return self.conf[0].vocab_axis.size
     @property
     def Vocab(self):
-        return self.conf.vocab_axis
+        return self.conf[0].vocab_axis
     def resize_vocab(_self, _new_size, _key):
         raise Exception("vocab resize not implemented for Mistral")
     @staticmethod
