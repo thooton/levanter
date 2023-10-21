@@ -175,22 +175,22 @@ class Block(eqx.Module, StateDictSerializationMixin):
         return x
 
 class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixin):
-    conf: tuple[MistralConfig]
+    conf: MistralConfig = eqx.static_field()
+    mask: hax.NamedArray = eqx.static_field()
+    rope: tuple[hax.NamedArray, hax.NamedArray] = eqx.static_field()
     wte: hax.NamedArray
     blocks: Stacked[Block]
     ln_f: RMSNorm
     lm_head: hnn.Linear
-    mask: tuple[hax.NamedArray]
-    rope: tuple[hax.NamedArray, hax.NamedArray]
     @property
     def config(self):
-        return self.conf[0]
+        return self.conf
     @property
     def vocab_size(self):
-        return self.conf[0].vocab_axis.size
+        return self.conf.vocab_axis.size
     @property
     def Vocab(self):
-        return self.conf[0].vocab_axis
+        return self.conf.vocab_axis
     def resize_vocab(_self, _new_size, _key):
         raise Exception("vocab resize not implemented for Mistral")
     @staticmethod
@@ -204,15 +204,15 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
         )(conf, key=shaped_rng_split(key, conf.layer_count))
         ln_f = RMSNorm.init(conf.model_axis, conf.norm_eps)
         lm_head = hnn.Linear.init(In=conf.model_axis, Out=conf.vocab_axis, key=kl, use_bias=False)
-        mask = (precompute_mask(conf.seq_axis, conf.kv_seq_axis),)
+        mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
         rope = precompute_rope(conf.head_axis, conf.seq_axis)
-        return Mistral((conf,), wte, blocks, ln_f, lm_head, mask, rope)
+        return Mistral(conf, mask, rope, wte, blocks, ln_f, lm_head)
     @named_call
     def __call__(self, x, attn_mask=None, *, key=None):
         del key
         del attn_mask
         x = self.wte.take("vocab", x)
-        x = self.blocks.fold(x, self.mask[0], self.rope)
+        x = self.blocks.fold(x, self.mask, self.rope)
         x = self.ln_f(x)
         x = self.lm_head(x)
         return x
