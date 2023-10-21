@@ -38,7 +38,7 @@ class MistralConfig:
 
     model_type = property(lambda _: Mistral)
 
-    def build(_vocab_axis, key):
+    def build(self, _vocab_axis, key):
         return Mistral.init(self, key)
 
 def precompute_rope(head_axis, seq_axis):
