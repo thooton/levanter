@@ -172,7 +172,7 @@ class Block(eqx.Module, StateDictSerializationMixin):
         ln_1 = RMSNorm.init(conf.model_axis, conf.norm_eps)
         attn = Attention.init(conf, ka)
         ln_2 = RMSNorm.init(conf.model_axis, conf.norm_eps)
-        ffn = FFN.init(conf.model_axis, conf.gate_axis, conf.ff_axis, kf)
+        ffn = FFN.init(conf.model_axis, conf.ff_axis, kf)
         return Block(ln_1, attn, ln_2, ffn)
     @named_call
     def __call__(self, x, mask, rope):
