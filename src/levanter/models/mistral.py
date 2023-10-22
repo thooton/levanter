@@ -25,6 +25,7 @@ class MistralConfig(LmConfig):
     seq_axis = property(lambda self: hax.Axis(name="seq", size=self.seq_len))
     kv_seq_axis = property(lambda self: self.seq_axis.alias("kv_seq"))
     model_axis = property(lambda self: hax.Axis(name="model", size=self.model_dim))
+    gate_axis = property(lambda self: hax.Axis(name="gate", size=self.model_dim))
     ff_axis = property(lambda self: hax.Axis(name="ff", size=self.ff_dim))
     query_axis = property(lambda self: hax.Axis(name="query", size=self.query_count))
     kv_axis = property(lambda self: hax.Axis(name="kv", size=self.kv_count))
@@ -75,24 +76,23 @@ def precompute_mask(seq_axis, kv_seq_axis):
 
 class FFN(eqx.Module, StateDictSerializationMixin):
     model_axis: hax.Axis = eqx.static_field()
-    embed_axis: hax.Axis = eqx.static_field()
+    gate_axis: hax.Axis = eqx.static_field()
     wg: hnn.Linear
     wu: hnn.Linear
     wd: hnn.Linear
     @staticmethod
-    def init(model_axis, ff_axis, key):
-        embed_axis = model_axis.alias("embed")
-        wg = hnn.Linear.init(In=model_axis, Out=embed_axis, key=key, use_bias=False)
+    def init(model_axis, gate_axis, ff_axis, key):
+        wg = hnn.Linear.init(In=model_axis, Out=gate_axis, key=key, use_bias=False)
         wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=key, use_bias=False)
         wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=key, use_bias=False)
-        return FFN(model_axis, embed_axis, wg, wu, wd)
+        return FFN(model_axis, gate_axis, wg, wu, wd)
     @named_call
     def __call__(self, x):
         g = self.wg(x)
         u = self.wu(x)
         u = hax.square(hnn.relu(u))
         d = self.wd(u)
-        x = hnn.sigmoid(g).rename({self.embed_axis: self.model_axis}) * d
+        x = hnn.sigmoid(g).rename({self.gate_axis: self.model_axis}) * d
         return x
 
 class Attention(eqx.Module, StateDictSerializationMixin):
@@ -177,7 +177,7 @@ class Block(eqx.Module, StateDictSerializationMixin):
         ln_1 = RMSNorm.init(conf.model_axis, conf.norm_eps)
         attn = Attention.init(conf, ka)
         ln_2 = RMSNorm.init(conf.model_axis, conf.norm_eps)
-        ffn = FFN.init(conf.model_axis, conf.ff_axis, kf)
+        ffn = FFN.init(conf.model_axis, conf.gate_axis, conf.ff_axis, kf)
         return Block(ln_1, attn, ln_2, ffn)
     @named_call
     def __call__(self, x, mask, rope):
