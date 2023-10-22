@@ -2,7 +2,7 @@ data: !include data/openwebtext_source.yaml
 model:
   type: mistral
   model_dim: 768
-  ff_dim: 2668
+  ff_dim: 2048
   query_count: 16
   kv_count: 4
   layer_count: 12

@@ -25,7 +25,6 @@ class MistralConfig(LmConfig):
     seq_axis = property(lambda self: hax.Axis(name="seq", size=self.seq_len))
     kv_seq_axis = property(lambda self: self.seq_axis.alias("kv_seq"))
     model_axis = property(lambda self: hax.Axis(name="model", size=self.model_dim))
-    gate_axis = property(lambda self: hax.Axis(name="gate", size=self.model_dim))
     ff_axis = property(lambda self: hax.Axis(name="ff", size=self.ff_dim))
     query_axis = property(lambda self: hax.Axis(name="query", size=self.query_count))
     kv_axis = property(lambda self: hax.Axis(name="kv", size=self.kv_count))
@@ -75,24 +74,20 @@ def precompute_mask(seq_axis, kv_seq_axis):
         return jax.lax.stop_gradient(mask)
 
 class FFN(eqx.Module, StateDictSerializationMixin):
-    model_axis: hax.Axis = eqx.static_field()
-    gate_axis: hax.Axis = eqx.static_field()
     wg: hnn.Linear
     wu: hnn.Linear
     wd: hnn.Linear
     @staticmethod
-    def init(model_axis, gate_axis, ff_axis, key):
-        wg = hnn.Linear.init(In=model_axis, Out=gate_axis, key=key, use_bias=False)
-        wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=key, use_bias=False)
-        wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=key, use_bias=False)
-        return FFN(model_axis, gate_axis, wg, wu, wd)
+    def init(model_axis, ff_axis, key):
+        kg, ku, kd = jax.random.split(key, 3)
+        wg = hnn.Linear.init(In=model_axis, Out=ff_axis, key=kg, use_bias=False)
+        wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=ku, use_bias=False)
+        wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=kd, use_bias=False)
+        return FFN(wg, wu, wd)
     @named_call
     def __call__(self, x):
-        g = self.wg(x)
-        u = self.wu(x)
-        u = hax.square(hnn.relu(u))
-        d = self.wd(u)
-        x = hnn.sigmoid(g).rename({self.gate_axis: self.model_axis}) * d
+        x = hnn.silu(self.wg(x)) * self.wu(x)
+        x = self.wd(x)
         return x
 
 class Attention(eqx.Module, StateDictSerializationMixin):
