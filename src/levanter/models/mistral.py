@@ -54,7 +54,7 @@ def precompute_rope(head_axis, seq_axis):
         emb = hax.concatenate(head_axis, (freqs, freqs))
         sin = hax.sin(emb)
         cos = hax.cos(emb)
-        return jax.lax.stop_gradient((sin, cos))
+        return jax.lax.stop_gradient(sin), jax.lax.stop_gradient(cos)
 
 def rotate_half(x):
     axis = x.axes[-1]
@@ -63,8 +63,7 @@ def rotate_half(x):
     x = hax.concatenate(axis, (-x2, x1))
     return x
 
-def apply_rope(x, rope):
-    sin, cos = rope
+def apply_rope(x, sin, cos):
     return (x * cos) + (rotate_half(x) * sin)
 
 def precompute_mask(seq_axis, kv_seq_axis):
@@ -105,7 +104,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         wo = hnn.Linear.init(In=(conf.kv_repeat_axis, conf.kv_axis, conf.head_axis), Out=conf.model_axis, key=ko, use_bias=False)
         return Attention(conf, wq, wk, wv, wo)
     @named_call
-    def __call__(self, x, mask, rope):
+    def __call__(self, x, mask, sin, cos):
         conf = self.conf
         batch_axis = x.axes[0]
         # (batch_size, seq_len, kv_repeat, kv_count, head_dim)
@@ -120,7 +119,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
             for t in (k, v)
         )
         q, k = (
-            apply_rope(t, rope)
+            apply_rope(t, sin, cos)
             for t in (q, k)
         )
         k *= conf.head_axis.size ** -0.5
@@ -175,19 +174,20 @@ class Block(eqx.Module, StateDictSerializationMixin):
         ffn = FFN.init(conf.model_axis, conf.ff_axis, kf)
         return Block(ln_1, attn, ln_2, ffn)
     @named_call
-    def __call__(self, x, mask, rope):
-        x += self.attn(self.ln_1(x), mask, rope)
+    def __call__(self, x, mask, sin, cos):
+        x += self.attn(self.ln_1(x), mask, sin, cos)
         x += self.ffn(self.ln_2(x))
         return x
 
 class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixin):
     conf: MistralConfig = eqx.static_field()
-    mask: hax.NamedArray = eqx.static_field()
-    rope: tuple[hax.NamedArray, hax.NamedArray] = eqx.static_field()
     wte: hax.NamedArray
     blocks: Stacked[Block]
     ln_f: RMSNorm
     lm_head: hnn.Linear
+    mask: hax.NamedArray
+    sin: hax.NamedArray
+    cos: hax.NamedArray
     @property
     def config(self):
         return self.conf
@@ -211,12 +211,12 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
         ln_f = RMSNorm.init(conf.model_axis, conf.norm_eps)
         lm_head = hnn.Linear.init(In=conf.model_axis, Out=conf.vocab_axis, key=kl, use_bias=False)
         mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
-        rope = precompute_rope(conf.head_axis, conf.seq_axis)
-        return Mistral(conf, mask, rope, wte, blocks, ln_f, lm_head)
+        sin, cos = precompute_rope(conf.head_axis, conf.seq_axis)
+        return Mistral(conf, wte, blocks, ln_f, lm_head, mask, sin, cos)
     @named_call
     def __call__(self, x, attn_mask=None, *, key=None):
         x = self.wte.take(self.conf.vocab_axis, x)
-        x = self.blocks.fold(x, self.mask, self.rope)
+        x = self.blocks.fold(x, self.mask, self.sin, self.cos)
         x = self.ln_f(x)
         x = self.lm_head(x)
         return x
