@@ -81,18 +81,18 @@ class FFN(eqx.Module, StateDictSerializationMixin):
     wd: hnn.Linear
     @staticmethod
     def init(model_axis, ff_axis, key):
-        embed_axis = model_axis.alias("embed_axis")
-        wg = hnn.Linear.init(In=embed_axis, Out=model_axis, key=key, use_bias=False)
+        embed_axis = model_axis.alias("embed")
+        wg = hnn.Linear.init(In=model_axis, Out=embed_axis, key=key, use_bias=False)
         wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=key, use_bias=False)
         wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=key, use_bias=False)
         return FFN(model_axis, embed_axis, wg, wu, wd)
     @named_call
     def __call__(self, x):
-        g = self.wg(x.rename({self.model_axis: self.embed_axis}))
+        g = self.wg(x)
         u = self.wu(x)
         u = hax.square(hnn.relu(u))
         d = self.wd(u)
-        x = hnn.sigmoid(g) * d
+        x = hnn.sigmoid(g).rename({self.embed_axis: self.model_axis}) * d
         return x
 
 class Attention(eqx.Module, StateDictSerializationMixin):
@@ -220,9 +220,7 @@ class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixi
         return Mistral(conf, mask, rope, wte, blocks, ln_f, lm_head)
     @named_call
     def __call__(self, x, attn_mask=None, *, key=None):
-        del key
-        del attn_mask
-        x = self.wte.take("vocab", x)
+        x = self.wte.take(self.conf.vocab_axis, x)
         x = self.blocks.fold(x, self.mask, self.rope)
         x = self.ln_f(x)
         x = self.lm_head(x)
