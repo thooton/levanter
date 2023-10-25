@@ -54,7 +54,7 @@ def precompute_rope(head_axis, seq_axis):
         emb = hax.concatenate(head_axis, (freqs, freqs))
         sin = hax.sin(emb)
         cos = hax.cos(emb)
-        return jax.lax.stop_gradient(sin), jax.lax.stop_gradient(cos)
+    return jax.lax.stop_gradient(sin), jax.lax.stop_gradient(cos)
 
 def rotate_half(x):
     axis = x.axes[-1]
@@ -70,7 +70,7 @@ def precompute_mask(seq_axis, kv_seq_axis):
     with jax.ensure_compile_time_eval():
         mask = hax.full((seq_axis, kv_seq_axis), -1e9)
         mask = hax.triu(mask, seq_axis, kv_seq_axis, 1)
-        return jax.lax.stop_gradient(mask)
+    return jax.lax.stop_gradient(mask)
 
 class FFN(eqx.Module, StateDictSerializationMixin):
     wg: hnn.Linear
@@ -122,7 +122,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
             apply_rope(t, sin, cos)
             for t in (q, k)
         )
-        k *= conf.head_axis.size ** -0.5
+        k = k * (conf.head_axis.size ** -0.5)
         # (batch_size, kv_count, kv_seq_len, head_dim)
         k, v = (
             t.rename({conf.seq_axis: conf.kv_seq_axis})
@@ -130,7 +130,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         )
         # (batch_size, kv_repeat, kv_count, seq_len, kv_seq_len)
         a = hax.dot(conf.head_axis, q, k)
-        a += mask
+        a = a + mask
         a = hnn.softmax(a, axis=conf.kv_seq_axis)
         # (batch_size, kv_repeat, kv_count, seq_len, head_dim)
         y = hax.dot(conf.kv_seq_axis, a, v)
@@ -152,12 +152,12 @@ class RMSNorm(eqx.Module, StateDictSerializationMixin):
     def __call__(self, x):
         dtype = x.dtype
         x = x.astype("float32")
-        x *= hax.rsqrt(
+        x = x * hax.rsqrt(
             hax.mean(hax.square(x), axis=self.axis)
             + self.eps
         )
         x = x.astype(dtype)
-        x *= self.scale
+        x = x * self.scale
         return x
 
 class Block(eqx.Module, StateDictSerializationMixin):
@@ -175,8 +175,8 @@ class Block(eqx.Module, StateDictSerializationMixin):
         return Block(ln_1, attn, ln_2, ffn)
     @named_call
     def __call__(self, x, mask, sin, cos):
-        x += self.attn(self.ln_1(x), mask, sin, cos)
-        x += self.ffn(self.ln_2(x))
+        x = x + self.attn(self.ln_1(x), mask, sin, cos)
+        x = x + self.ffn(self.ln_2(x))
         return x
 
 class Mistral(eqx.Module, LmHeadModel[MistralConfig], StateDictSerializationMixin):
