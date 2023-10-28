@@ -12,7 +12,7 @@ model:
   gradient_checkpointing: true
 trainer:
   wandb:
-    project: "levanter"
+    project: "aether"
     tags: [ "openwebtext", "gpt2", "itest"]
 
   mp: p=bfloat16,c=bfloat16
