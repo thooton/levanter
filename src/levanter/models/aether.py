@@ -271,13 +271,15 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
             hax.nn.one_hot(y, self.Vocab, dtype=pa.dtype)
             for y in (ya, yb)
         )
+        ma = example.loss_mask[batch_axis, :batch_axis.size // 2]
+        mb = example.loss_mask[batch_axis, batch_axis.size // 2:]
         la, lb = (
             hnn.cross_entropy_loss(
                 p, self.Vocab, y, reduction,
                 reduction_axis=reduction_axis,
-                where=example.loss_mask
+                where=m
             )
-            for (p, y) in ((pa, ya), (pb, yb))
+            for (p, y, m) in ((pa, ya, ma), (pb, yb, mb))
         )
         loss = (la + lb) * 0.5
         return loss
