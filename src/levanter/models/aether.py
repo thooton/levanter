@@ -273,7 +273,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
             for y in (ya, yb)
         )
         la, lb = (
-            cross_entropy_loss(
+            hnn.cross_entropy_loss(
                 p, self.Vocab, y, reduction,
                 reduction_axis=reduction_axis,
                 where=example.loss_mask
