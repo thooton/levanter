@@ -193,6 +193,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
     ln_ob: RMSNorm
     woa: hnn.Linear
     wob: hnn.Linear
+    ln_f: RMSNorm
     mask: hax.NamedArray
     sin: hax.NamedArray
     cos: hax.NamedArray
@@ -224,11 +225,12 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         ln_ob = RMSNorm.init(conf.model_axis, conf.norm_eps)
         woa = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=koa, use_bias=False)
         wob = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=kob, use_bias=False)
+        ln_f = RMSNorm.init(conf.embed_axis, conf.norm_eps)
         mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
         sin, cos = precompute_rope(conf.head_axis, conf.seq_axis)
         return Aether(
             conf, lm_head, ln_ia, ln_ib, wia, wib, blocks,
-            ln_oa, ln_ob, woa, wob, mask, sin, cos
+            ln_oa, ln_ob, woa, wob, ln_f, mask, sin, cos
         )
     @named_call
     def __call__(self, xa, xb, attn_mask=None, *, key=None):
