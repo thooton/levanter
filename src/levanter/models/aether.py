@@ -269,7 +269,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
             for x in (xa, xb)
         )
         ya, yb = (
-            hax.nn.one_hot(y, self.Vocab, dtype=logits_a.dtype)
+            hax.nn.one_hot(y, self.Vocab, dtype=pa.dtype)
             for y in (ya, yb)
         )
         la, lb = (
