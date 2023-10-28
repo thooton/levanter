@@ -237,20 +237,12 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         wte = self.lm_head.weight.rearrange((self.conf.vocab_axis, self.conf.embed_axis))
         xa = wte.take(self.conf.vocab_axis, xa)
         xb = wte.take(self.conf.vocab_axis, xb)
-        xa = xa.rename({
-            self.conf.embed_axis: self.conf.model_axis
-        }) + self.wia(self.ln_ia(xa))
-        xb = xb.rename({
-            self.conf.embed_axis: self.conf.model_axis
-        }) + self.wib(self.ln_ib(xb))
-        x = (xa + xb) * 0.5
+        xa = self.wia(self.ln_ia(xa))
+        xb = self.wib(self.ln_ib(xb))
+        x = xa + xb
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
-        xa = x.rename({
-            self.conf.model_axis: self.conf.embed_axis
-        }) + self.woa(self.ln_oa(x))
-        xb = x.rename({
-            self.conf.model_axis: self.conf.embed_axis
-        }) + self.wob(self.ln_ob(x))
+        xa = self.woa(self.ln_oa(x))
+        xb = self.wob(self.ln_ob(x))
         xa = self.lm_head(self.ln_f(xa))
         xb = self.lm_head(self.ln_f(xb))
         return xa, xb
