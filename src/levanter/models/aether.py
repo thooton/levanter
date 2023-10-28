@@ -226,7 +226,10 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         wob = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=kob, use_bias=False)
         mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
         sin, cos = precompute_rope(conf.head_axis, conf.seq_axis)
-        return Aether(lm_head, ln_ia, ln_ib, wia, wib, blocks, ln_oa, ln_ob, woa, wob, mask, sin, cos)
+        return Aether(
+            conf, lm_head, ln_ia, ln_ib, wia, wib, blocks,
+            ln_oa, ln_ob, woa, wob, mask, sin, cos
+        )
     @named_call
     def __call__(self, xa, xb, attn_mask=None, *, key=None):
         wte = self.lm_head.weight.T
