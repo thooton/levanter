@@ -7,7 +7,7 @@ import haliax.nn as hnn
 from haliax.jax_utils import named_call, shaped_rng_split
 from haliax.nn.scan import Stacked
 from levanter.compat.torch_serialization import StateDictSerializationMixin
-from levanter.models.lm_model import LmConfig, LmHeadModel
+from levanter.models.lm_model import LmConfig, LmHeadModel, LmExample
 
 @LmConfig.register_subclass("aether")
 @dataclass(frozen=True)
