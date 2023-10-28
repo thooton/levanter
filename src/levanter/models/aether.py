@@ -188,6 +188,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
     ln_ib: RMSNorm
     wia: hnn.Linear
     wib: hnn.Linear
+    ln_p: hnn.Linear
     blocks: Stacked[Block]
     ln_oa: RMSNorm
     ln_ob: RMSNorm
@@ -230,7 +231,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
         sin, cos = precompute_rope(conf.head_axis, conf.seq_axis)
         return Aether(
-            conf, lm_head, ln_ia, ln_ib, wia, wib, blocks,
+            conf, lm_head, ln_ia, ln_ib, wia, wib, ln_p, blocks,
             ln_oa, ln_ob, woa, wob, ln_f, mask, sin, cos
         )
     @named_call
