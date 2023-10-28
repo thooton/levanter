@@ -258,11 +258,10 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         reduction: Optional[hax.ReductionFunction] = hax.mean,
         reduction_axis: Optional[hax.AxisSelection] = None
     ):
-        x = example.tokens
-        batch_axis = x.axes[-2]
+        batch_axis = example.tokens.axes[-2]
         assert (batch_axis.size % 2) == 0
-        xa = x[batch_axis, :batch_axis.size // 2]
-        xb = x[batch_axis, batch_axis.size // 2:]
+        xa = example.tokens[batch_axis, :batch_axis.size // 2]
+        xb = example.tokens[batch_axis, batch_axis.size // 2:]
         pa, pb = self(xa, xb, example.attn_mask, key=key)
         ya, yb = (
             hax.roll(x, -1, axis=self.Pos)
