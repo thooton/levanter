@@ -216,6 +216,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         ln_ib = RMSNorm.init(conf.embed_axis, conf.norm_eps)
         wia = hnn.Linear.init(In=conf.embed_axis, Out=conf.model_axis, key=kia, use_bias=False)
         wib = hnn.Linear.init(In=conf.embed_axis, Out=conf.model_axis, key=kib, use_bias=False)
+        ln_p = RMSNorm.init(conf.model_axis, conf.norm_eps)
         blocks = Stacked.init(
             conf.layer_axis,
             Block,
@@ -239,7 +240,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         xb = wte.take(self.conf.vocab_axis, xb)
         xa = self.wia(self.ln_ia(xa))
         xb = self.wib(self.ln_ib(xb))
-        x = xa + xb
+        x = self.ln_p(xa + xb)
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
         xa = self.woa(self.ln_oa(x))
         xb = self.wob(self.ln_ob(x))
