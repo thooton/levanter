@@ -188,7 +188,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
     ln_ib: RMSNorm
     wia: hnn.Linear
     wib: hnn.Linear
-    ln_p: hnn.Linear
+    ln_p: RMSNorm
     blocks: Stacked[Block]
     ln_oa: RMSNorm
     ln_ob: RMSNorm
