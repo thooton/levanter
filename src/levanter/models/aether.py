@@ -245,12 +245,14 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         }) + self.wib(self.ln_ib(xb))
         x = (xa + xb) * 0.5
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
-        xa = self.lm_head(x.rename({
+        xa = x.rename({
             self.conf.model_axis: self.conf.embed_axis
-        }) + self.woa(self.ln_oa(x)))
-        xb = self.lm_head(x.rename({
+        }) + self.woa(self.ln_oa(x))
+        xb = x.rename({
             self.conf.model_axis: self.conf.embed_axis
-        }) + self.wob(self.ln_ob(x)))
+        }) + self.wob(self.ln_ob(x))
+        xa = self.lm_head(self.ln_f(xa))
+        xb = self.lm_head(self.ln_f(xb))
         return xa, xb
     def compute_loss(
         self,
