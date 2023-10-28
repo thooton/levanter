@@ -232,7 +232,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         )
     @named_call
     def __call__(self, xa, xb, attn_mask=None, *, key=None):
-        wte = self.lm_head.weight.T
+        wte = self.lm_head.weight.rearrange((conf.vocab_axis, conf.embed_axis))
         xa = wte.take(self.conf.vocab_axis, xa)
         xb = wte.take(self.conf.vocab_axis, xb)
         xa = xa + self.wia(self.ln_ia(xa))
