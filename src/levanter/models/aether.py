@@ -183,10 +183,16 @@ class Block(eqx.Module, StateDictSerializationMixin):
 
 class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin):
     conf: AetherConfig = eqx.static_field()
-    wte: hax.NamedArray
-    blocks: Stacked[Block]
-    ln_f: RMSNorm
     lm_head: hnn.Linear
+    ln_ia: RMSNorm
+    ln_ib: RMSNorm
+    wia: hnn.Linear
+    wib: hnn.Linear
+    blocks: Stacked[Block]
+    ln_oa: RMSNorm
+    ln_ob: RMSNorm
+    woa: hnn.Linear
+    wob: hnn.Linear
     mask: hax.NamedArray
     sin: hax.NamedArray
     cos: hax.NamedArray
@@ -220,7 +226,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         wob = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=kob, use_bias=False)
         mask = precompute_mask(conf.seq_axis, conf.kv_seq_axis)
         sin, cos = precompute_rope(conf.head_axis, conf.seq_axis)
-        return Aether(conf, wte, blocks, ln_f, lm_head, mask, sin, cos)
+        return Aether(lm_head, ln_ia, ln_ib, wia, wib, blocks, ln_oa, ln_ob, woa, wob, mask, sin, cos)
     @named_call
     def __call__(self, xa, xb, attn_mask=None, *, key=None):
         wte = self.lm_head.weight.T
