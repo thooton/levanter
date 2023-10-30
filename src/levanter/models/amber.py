@@ -76,18 +76,20 @@ class FFN(eqx.Module, StateDictSerializationMixin):
     wg: hnn.Linear
     wu: hnn.Linear
     wd: hnn.Linear
+    scale: hax.NamedArray
     @staticmethod
     def init(model_axis, ff_axis, key):
         kg, ku, kd = jax.random.split(key, 3)
         wg = hnn.Linear.init(In=model_axis, Out=ff_axis, key=kg, use_bias=False)
         wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=ku, use_bias=False)
         wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=kd, use_bias=False)
-        return FFN(wg, wu, wd)
+        scale = hax.ones(model_axis)
+        return FFN(wg, wu, wd, scale)
     @named_call
     def __call__(self, x):
-        x = hax.square(hnn.relu(x))
         x = hnn.silu(self.wg(x)) * self.wu(x)
         x = self.wd(x)
+        x = hax.square(hnn.relu(x)) * self.scale
         return x
 
 class Attention(eqx.Module, StateDictSerializationMixin):
@@ -96,6 +98,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
     wk: hnn.Linear
     wv: hnn.Linear
     wo: hnn.Linear
+    scale: hax.NamedArray
     @staticmethod
     def init(conf, key):
         kq, kk, kv, ko = jax.random.split(key, 4)
@@ -103,12 +106,12 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         wk = hnn.Linear.init(In=conf.model_axis, Out=(conf.kv_axis, conf.head_axis), key=kk, use_bias=False)
         wv = hnn.Linear.init(In=conf.model_axis, Out=(conf.kv_axis, conf.head_axis), key=kv, use_bias=False)
         wo = hnn.Linear.init(In=(conf.kv_repeat_axis, conf.kv_axis, conf.head_axis), Out=conf.model_axis, key=ko, use_bias=False)
-        return Attention(conf, wq, wk, wv, wo)
+        scale = hax.ones(conf.model_axis)
+        return Attention(conf, wq, wk, wv, wo, scale)
     @named_call
     def __call__(self, x, mask, sin, cos):
         conf = self.conf
         batch_axis = x.axes[0]
-        x = hax.square(hnn.relu(x))
         # (batch_size, seq_len, kv_repeat, kv_count, head_dim)
         q = self.wq(x)
         # (batch_size, kv_repeat, kv_count, seq_len, head_dim)
@@ -140,6 +143,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         y = y.rearrange((batch_axis, conf.seq_axis, conf.kv_repeat_axis, conf.kv_axis, conf.head_axis))
         # (batch_size, seq_len, model_dim)
         y = self.wo(y)
+        y = hax.square(hnn.relu(y)) * self.scale
         return y
 
 class RMSNorm(eqx.Module, StateDictSerializationMixin):
