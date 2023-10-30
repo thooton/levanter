@@ -83,7 +83,7 @@ class FFN(eqx.Module, StateDictSerializationMixin):
         wg = hnn.Linear.init(In=model_axis, Out=ff_axis, key=kg, use_bias=False)
         wu = hnn.Linear.init(In=model_axis, Out=ff_axis, key=ku, use_bias=False)
         wd = hnn.Linear.init(In=ff_axis, Out=model_axis, key=kd, use_bias=False)
-        scale = hax.ones(model_axis)
+        scale = hax.zeros(model_axis)
         return FFN(wg, wu, wd, scale)
     @named_call
     def __call__(self, x):
@@ -106,7 +106,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         wk = hnn.Linear.init(In=conf.model_axis, Out=(conf.kv_axis, conf.head_axis), key=kk, use_bias=False)
         wv = hnn.Linear.init(In=conf.model_axis, Out=(conf.kv_axis, conf.head_axis), key=kv, use_bias=False)
         wo = hnn.Linear.init(In=(conf.kv_repeat_axis, conf.kv_axis, conf.head_axis), Out=conf.model_axis, key=ko, use_bias=False)
-        scale = hax.ones(conf.model_axis)
+        scale = hax.zeros(conf.model_axis)
         return Attention(conf, wq, wk, wv, wo, scale)
     @named_call
     def __call__(self, x, mask, sin, cos):
