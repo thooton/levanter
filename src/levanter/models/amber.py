@@ -85,7 +85,7 @@ class FFN(eqx.Module, StateDictSerializationMixin):
         return FFN(wg, wu, wd)
     @named_call
     def __call__(self, x):
-        #x = hax.square(hnn.relu(x))
+        x = hax.square(hnn.relu(x))
         x = hnn.silu(self.wg(x)) * self.wu(x)
         x = self.wd(x)
         return x
@@ -108,7 +108,7 @@ class Attention(eqx.Module, StateDictSerializationMixin):
     def __call__(self, x, mask, sin, cos):
         conf = self.conf
         batch_axis = x.axes[0]
-        #x = hax.square(hnn.relu(x))
+        x = hax.square(hnn.relu(x))
         # (batch_size, seq_len, kv_repeat, kv_count, head_dim)
         q = self.wq(x)
         # (batch_size, kv_repeat, kv_count, seq_len, head_dim)
@@ -138,7 +138,6 @@ class Attention(eqx.Module, StateDictSerializationMixin):
         y = hax.dot(conf.kv_seq_axis, a, v)
         # (batch_size, seq_len, kv_repeat, kv_count, head_dim)
         y = y.rearrange((batch_axis, conf.seq_axis, conf.kv_repeat_axis, conf.kv_axis, conf.head_axis))
-        #y = hax.square(hnn.relu(y))
         # (batch_size, seq_len, model_dim)
         y = self.wo(y)
         return y
