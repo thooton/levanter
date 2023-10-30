@@ -243,7 +243,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         )
         xa = self.wia(self.ln_ia(xa))
         xb = self.wib(self.ln_ib(xb))
-        x = hax.concatenate(xa.axes[0], (xa + xb, xc))
+        x = hax.concatenate(xa.axes[0].name, (xa + xb, xc))
         x = self.ln_p(x)
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
         xab = x[x.axes[0], :xa.axes[0].size]
