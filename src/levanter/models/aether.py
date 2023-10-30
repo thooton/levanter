@@ -296,4 +296,4 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
             )
         )
         loss = (la + lb + lc) / 3
-        return loss
+        return loss, la

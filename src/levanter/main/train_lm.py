@@ -46,6 +46,7 @@ class TrainLmConfig:
     hf_upload: Optional[str] = None
     hf_save_steps: int = 10000
 
+real_loss_list = []
 
 def main(config: TrainLmConfig):
     tokenizer = config.data.the_tokenizer
@@ -93,8 +94,17 @@ def main(config: TrainLmConfig):
     parameter_axis_mapping = config.trainer.parameter_axis_mapping
 
     def compute_loss(model: LmHeadModel, example: LmExample, key=None):
-        return model.compute_loss(example, key=key).scalar()
+        global real_loss_list
+        loss, real_loss = model.compute_loss(example, key=key)
+        real_loss_list.append(real_loss.item())
+        return loss.scalar()
 
+    def log_real_loss(step_info):
+        global real_loss_list
+        wandb.log({
+            "train/loss": sum(real_loss_list) / len(real_loss_list)
+        }, step=step_info.step)
+        
     optimizer = config.optimizer.build(config.trainer.num_train_steps)
 
     # Our trainer is a wrapper around the optimizer and compute_loss function that handles checkpointing and fsdp
@@ -138,6 +148,7 @@ def main(config: TrainLmConfig):
         # boilerplate hooks and such
         trainer.add_default_hooks(eval_loader)
         trainer.add_hook(callbacks.log_performance_stats(Pos.size, trainer.config.train_batch_size), every=1)
+        trainer.add_hook(log_real_loss, every=1)
         if config.hf_save_path is not None:
             full_save_path = os.path.join(config.hf_save_path, trainer.run_id)
 
