@@ -250,6 +250,9 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         xc = x[x.axes[0], xa.axes[0].size:]
         xa = self.woa(self.ln_oa(xab))
         xb = self.wob(self.ln_ob(xab))
+        xc = xc.rename({
+            self.conf.model_axis: self.conf.embed_axis
+        })
         xa = self.lm_head(self.ln_f(xa))
         xb = self.lm_head(self.ln_f(xb))
         xc = self.lm_head(self.ln_f(xc))
