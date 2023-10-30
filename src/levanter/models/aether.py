@@ -262,6 +262,7 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         reduction: Optional[hax.ReductionFunction] = hax.mean,
         reduction_axis: Optional[hax.AxisSelection] = None
     ):
+        print(example.tokens.axes)
         batch_axis = example.tokens.axes[-2]
         assert (batch_axis.size % 3) == 0
         mbsz = batch_axis.size // 3
