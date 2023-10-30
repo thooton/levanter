@@ -107,6 +107,8 @@ def main(config: TrainLmConfig):
                 actual_loss_list.append(l.item())
             except Exception:
                 pass
+        if len(actual_loss_list) == 0:
+            actual_loss_list.append(0.0)
         wandb.log({
             "train/loss": sum(actual_loss_list) / len(actual_loss_list)
         }, step=step_info.step)
