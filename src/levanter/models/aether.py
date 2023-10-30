@@ -235,19 +235,25 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
             ln_oa, ln_ob, woa, wob, ln_f, mask, sin, cos
         )
     @named_call
-    def __call__(self, xa, xb, attn_mask=None, *, key=None):
+    def __call__(self, xa, xb, xc, attn_mask=None, *, key=None):
         wte = self.lm_head.weight.rearrange((self.conf.vocab_axis, self.conf.embed_axis))
-        xa = wte.take(self.conf.vocab_axis, xa)
-        xb = wte.take(self.conf.vocab_axis, xb)
+        xa, xb, xc = (
+            wte.take(self.conf.vocab_axis, xx)
+            for xx in (xa, xb, xc)
+        )
         xa = self.wia(self.ln_ia(xa))
         xb = self.wib(self.ln_ib(xb))
-        x = self.ln_p((xa + xb) * 0.5)
+        x = hax.concatenate(xa.axes[0], (xa + xb, xc))
+        x = self.ln_p(x)
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
-        xa = self.woa(self.ln_oa(x))
-        xb = self.wob(self.ln_ob(x))
+        xab = x[x.axes[0], :xa.axes[0].size]
+        xc = x[x.axes[0], xa.axes[0].size:]
+        xa = self.woa(self.ln_oa(xab))
+        xb = self.wob(self.ln_ob(xab))
         xa = self.lm_head(self.ln_f(xa))
         xb = self.lm_head(self.ln_f(xb))
-        return xa, xb
+        xc = self.lm_head(self.ln_f(xc))
+        return xa, xb, xc
     def compute_loss(
         self,
         example: LmExample,
@@ -257,27 +263,36 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         reduction_axis: Optional[hax.AxisSelection] = None
     ):
         batch_axis = example.tokens.axes[-2]
-        assert (batch_axis.size % 2) == 0
-        xa = example.tokens[batch_axis, :batch_axis.size // 2]
-        xb = example.tokens[batch_axis, batch_axis.size // 2:]
-        pa, pb = self(xa, xb, example.attn_mask, key=key)
-        ya, yb = (
-            hax.roll(x, -1, axis=self.Pos)
-            for x in (xa, xb)
+        assert (batch_axis.size % 3) == 0
+        mbsz = batch_axis.size // 3
+        xa, xb, xc = (
+            example.tokens[batch_axis, i*mbsz:(i+1)*mbsz]
+            for i in range(3)
         )
-        ya, yb = (
-            hax.nn.one_hot(y, self.Vocab, dtype=pa.dtype)
-            for y in (ya, yb)
+        ma, mb, mc = (
+            example.loss_mask[batch_axis, i*mbsz:(i+1)*mbsz]
+            for i in range(3)
         )
-        ma = example.loss_mask[batch_axis, :batch_axis.size // 2]
-        mb = example.loss_mask[batch_axis, batch_axis.size // 2:]
-        la, lb = (
+        pa, pb, pc = self(xa, xb, xc, example.attn_mask, key=key)
+        ya, yb, yc = (
+            hax.roll(xx, -1, axis=self.Pos)
+            for xx in (xa, xb, xc)
+        )
+        ya, yb, yc = (
+            hax.nn.one_hot(yy, self.Vocab, dtype=pa.dtype)
+            for yy in (ya, yb, yc)
+        )
+        la, lb, lc = (
             hnn.cross_entropy_loss(
-                p, self.Vocab, y, reduction,
+                pp, self.Vocab, yy, reduction,
                 reduction_axis=reduction_axis,
-                where=m
+                where=mm
             )
-            for (p, y, m) in ((pa, ya, ma), (pb, yb, mb))
+            for (pp, yy, mm) in (
+                (pa, ya, ma),
+                (pb, yb, mb),
+                (pc, yc, mc)
+            )
         )
-        loss = (la + lb) * 0.5
+        loss = (la + lb + lc) / 3
         return loss
