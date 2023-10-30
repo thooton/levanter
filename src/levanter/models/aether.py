@@ -297,5 +297,5 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
                 (pc, yc, mc)
             )
         )
-        loss = la * 0.2 + (lb + lc) * 0.8
+        loss = (la * 0.2) + (lb * 0.4) + (lc * 0.4)
         return loss
