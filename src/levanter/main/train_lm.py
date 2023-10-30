@@ -96,15 +96,22 @@ def main(config: TrainLmConfig):
     def compute_loss(model: LmHeadModel, example: LmExample, key=None):
         global real_loss_list
         loss, real_loss = model.compute_loss(example, key=key)
-        real_loss_list.append(real_loss.item())
+        real_loss_list.append(real_loss.scalar())
         return loss.scalar()
 
     def log_real_loss(step_info):
         global real_loss_list
+        actual_loss_list = []
+        for l in real_loss_list:
+            try:
+                actual_loss_list.append(l.item())
+            except Exception:
+                pass
         wandb.log({
-            "train/loss": sum(real_loss_list) / len(real_loss_list)
+            "train/loss": sum(actual_loss_list) / len(actual_loss_list)
         }, step=step_info.step)
-        
+        real_loss_list.clear()
+
     optimizer = config.optimizer.build(config.trainer.num_train_steps)
 
     # Our trainer is a wrapper around the optimizer and compute_loss function that handles checkpointing and fsdp
