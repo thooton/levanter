@@ -269,15 +269,13 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
         reduction_axis: Optional[hax.AxisSelection] = None
     ):
         batch_axis = example.tokens.axes[-2]
-        mbsz = batch_axis.size // 3
-        xa, xb, xc = (
-            example.tokens[batch_axis, i*mbsz:(i+1)*mbsz]
-            for i in range(3)
-        )
-        ma, mb, mc = (
-            example.loss_mask[batch_axis, i*mbsz:(i+1)*mbsz]
-            for i in range(3)
-        )
+        mbsz = batch_axis.size // 5
+        xa = example.tokens[batch_axis, :mbsz*2]
+        xb = example.tokens[batch_axis, mbsz*2:mbsz*4]
+        xc = example.tokens[batch_axis, mbsz*4:]
+        ma = example.loss_mask[batch_axis, :mbsz*2]
+        mb = example.loss_mask[batch_axis, mbsz*2:mbsz*4]
+        mc = example.loss_mask[batch_axis, mbsz*4:]
         pa, pb, pc = self(xa, xb, xc, example.attn_mask, key=key)
         ya, yb, yc = (
             hax.roll(xx, -1, axis=self.Pos)
@@ -299,5 +297,5 @@ class Aether(eqx.Module, LmHeadModel[AetherConfig], StateDictSerializationMixin)
                 (pc, yc, mc)
             )
         )
-        loss = (la + lb + lc) / 3
-        return loss, la
+        loss = la * 0.2 + (lb + lc) * 0.8
+        return loss
