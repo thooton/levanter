@@ -216,7 +216,8 @@ class Amber(eqx.Module, LmHeadModel[AmberConfig], StateDictSerializationMixin):
         return Amber(conf, lm_head, blocks, ln_f, mask, sin, cos)
     @named_call
     def __call__(self, x, attn_mask=None, *, key=None):
-        x = self.lm_head.weight.take(self.conf.vocab_axis, x)
+        wte = self.lm_head.weight.rearrange((self.conf.vocab_axis, self.conf.model_axis))
+        x = wte.take(self.conf.vocab_axis, x)
         x = self.blocks.fold(x, self.mask, self.sin, self.cos)
         x = self.ln_f(x)
         x = self.lm_head(x)
