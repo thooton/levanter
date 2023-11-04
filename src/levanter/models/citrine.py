@@ -32,6 +32,7 @@ class CitrineConfig(LmConfig):
     layer_axis = property(lambda self: hax.Axis(name="layer", size=self.layer_count))
     head_axis = property(lambda self: hax.Axis(name="head", size=self.model_dim // self.query_count))
     vocab_axis = property(lambda self: hax.Axis(name="vocab", size=self.vocab_size))
+    native_batch_axis = property(lambda self: hax.Axis(name="native_batch", size=self.conf.native_batch_size))
     
     @property
     def model_type(cls):
@@ -241,10 +242,6 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
         entire_batch_axis = hax.Axis(
             name="entire_batch",
             size=batch_axis.size // self.conf.native_batch_size
-        )
-        native_batch_axis = hax.Axis(
-            name="native_batch",
-            size=self.conf.native_batch_size
         )
         if self.conf.native_batch_size > 1:
             x = x.unflatten_axis(batch_axis, (native_batch_axis, entire_batch_axis))
