@@ -174,7 +174,7 @@ class Block(eqx.Module, StateDictSerializationMixin):
         x = x + self.ffn(self.ln_2(x))
         return x
 
-class Citrine2(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixin):
+class Citrine2(eqx.Module, LmHeadModel[Citrine2Config], StateDictSerializationMixin):
     conf: Citrine2Config = eqx.static_field()
     lm_head: hnn.Linear
     ln_p: RMSNorm
