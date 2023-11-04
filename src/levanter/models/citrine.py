@@ -238,8 +238,14 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
         wte = self.lm_head.weight.rearrange((self.conf.vocab_axis, self.conf.embed_axis))
         batch_axis = x.axes[0]
         assert (batch_axis.size % self.conf.native_batch_size) == 0
-        entire_batch_axis = hax.Axis(name="entire_batch", size=batch_axis // self.conf.native_batch_size)
-        native_batch_axis = hax.Axis(name="native_batch", size=self.conf.native_batch_size)
+        entire_batch_axis = hax.Axis(
+            name="entire_batch",
+            size=batch_axis.size // self.conf.native_batch_size
+        )
+        native_batch_axis = hax.Axis(
+            name="native_batch",
+            size=self.conf.native_batch_size
+        )
         if self.conf.native_batch_size > 1:
             x = x.unflatten_axis(batch_axis, (native_batch_axis, entire_batch_axis))
             x = x.rearrange((entire_batch_axis, self.conf.seq_axis, native_batch_axis))
