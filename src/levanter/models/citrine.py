@@ -260,7 +260,7 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
             x = x.rearrange((
                 self.conf.native_batch_axis, entire_batch_axis, self.conf.seq_axis, self.conf.embed_axis
             ))
-            x = x.flatten_axes(x, (self.conf.native_batch_axis, entire_batch_axis), batch_axis)
+            x = x.flatten_axes((self.conf.native_batch_axis, entire_batch_axis), batch_axis)
         else:
             x = x.rename({
                 self.conf.model_axis: self.conf.embed_axis
