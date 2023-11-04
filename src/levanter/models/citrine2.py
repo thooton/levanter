@@ -262,7 +262,7 @@ class Citrine2(eqx.Module, LmHeadModel[Citrine2Config], StateDictSerializationMi
         pa, pb = self(xa, xb, example.attn_mask, key=key)
         ya, yb = (
             hax.roll(xx, -1, axis=self.Pos)
-            for xx in (xa, xb, xc)
+            for xx in (xa, xb)
         )
         ya, yb = (
             hax.nn.one_hot(yy, self.Vocab, dtype=pa.dtype)
