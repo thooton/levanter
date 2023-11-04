@@ -204,7 +204,7 @@ class Citrine3(eqx.Module, LmHeadModel[Citrine3Config], StateDictSerializationMi
         raise Exception("vocab resize not implemented for Citrine3")
     @staticmethod
     def init(conf, key):
-        klm_head, kia, kib, kic, koa, kob, koc = jax.random.split(key, 5)
+        klm_head, kia, kib, kic, koa, kob, koc = jax.random.split(key, 7)
         lm_head = hnn.Linear.init(In=conf.embed_axis, Out=conf.vocab_axis, key=klm_head, use_bias=False)
         ln_p = RMSNorm.init(conf.model_axis, conf.norm_eps)
         blocks = Stacked.init(
