@@ -1,14 +1,13 @@
 data: !include data/openwebtext_source.yaml
 model:
-  type: citrine
+  type: citrine3
   model_dim: 768
   ff_dim: 2048
   query_count: 12
-  layer_count: 21
+  layer_count: 22
   norm_eps: 1e-6
   seq_len: 1024
   vocab_size: 32000
-  native_batch_size: 3
   gradient_checkpointing: true
 trainer:
   wandb:
@@ -17,7 +16,7 @@ trainer:
 
   mp: p=bfloat16,c=bfloat16
   model_axis_size: 1
-  per_device_parallelism: 63
+  per_device_parallelism: 21
 
   train_batch_size: 504
   num_train_steps: 20000
