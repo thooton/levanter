@@ -229,7 +229,22 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
                 use_bias=False
             )
         else:
-            ln_i, wi, ln_o, wo = None, None, None, None
+            zero_axis = hax.Axis(name="zero", size=0)
+            zero2_axis = hax.Axis(name="zero2", size=0)
+            ln_i = RMSNorm.init(conf.zero_axis)
+            wi = hnn.Linear.init(
+                In=zero_axis,
+                Out=zero2_axis,
+                key=ki,
+                use_bias=False
+            )
+            ln_o = RMSNorm.init(conf.zero_axis)
+            wo = hnn.Linear.init(
+                In=zero_axis,
+                Out=zero2_axis,
+                key=ko,
+                use_bias=False
+            )
         return Citrine(
             conf, lm_head, ln_p, blocks, ln_f, mask, sin, cos,
             ln_i, wi, ln_o, wo
