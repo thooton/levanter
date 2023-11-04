@@ -10,7 +10,7 @@ from levanter.compat.torch_serialization import StateDictSerializationMixin
 from levanter.models.lm_model import LmConfig, LmHeadModel, LmExample
 from typing import Optional
 
-@LmConfig.register_subclass("aether")
+@LmConfig.register_subclass("citrine")
 @dataclass(frozen=True)
 class CitrineConfig(LmConfig):
     model_dim: int
