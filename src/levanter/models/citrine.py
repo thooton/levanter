@@ -244,8 +244,8 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
             size=batch_axis.size // self.conf.native_batch_size
         )
         if self.conf.native_batch_size > 1:
-            x = x.unflatten_axis(batch_axis, (native_batch_axis, entire_batch_axis))
-            x = x.rearrange((entire_batch_axis, self.conf.seq_axis, native_batch_axis))
+            x = x.unflatten_axis(batch_axis, (self.conf.native_batch_axis, entire_batch_axis))
+            x = x.rearrange((entire_batch_axis, self.conf.seq_axis, self.conf.native_batch_axis))
         x = wte.take(self.conf.vocab_axis, x)
         if self.conf.native_batch_size > 1:
             x = self.wi(self.ln_i(x))
@@ -258,9 +258,9 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
         if self.conf.native_batch_size > 1:
             x = self.wo(self.ln_o(x))
             x = x.rearrange((
-                native_batch_axis, entire_batch_axis, self.conf.seq_axis, self.conf.embed_axis
+                self.conf.native_batch_axis, entire_batch_axis, self.conf.seq_axis, self.conf.embed_axis
             ))
-            x = x.flatten_axes(x, (native_batch_axis, entire_batch_axis), batch_axis)
+            x = x.flatten_axes(x, (self.conf.native_batch_axis, entire_batch_axis), batch_axis)
         else:
             x = x.rename({
                 self.conf.model_axis: self.conf.embed_axis
