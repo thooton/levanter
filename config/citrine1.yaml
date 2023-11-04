@@ -9,7 +9,7 @@ model:
   seq_len: 1024
   vocab_size: 32000
   native_batch_size: 1
-  gradient_checkpointing: true
+  gradient_checkpointing: false
 trainer:
   wandb:
     project: "citrine"

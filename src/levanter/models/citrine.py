@@ -231,14 +231,14 @@ class Citrine(eqx.Module, LmHeadModel[CitrineConfig], StateDictSerializationMixi
         else:
             zero_axis = hax.Axis(name="zero", size=0)
             zero2_axis = hax.Axis(name="zero2", size=0)
-            ln_i = RMSNorm.init(conf.zero_axis)
+            ln_i = RMSNorm.init(zero_axis)
             wi = hnn.Linear.init(
                 In=zero_axis,
                 Out=zero2_axis,
                 key=ki,
                 use_bias=False
             )
-            ln_o = RMSNorm.init(conf.zero_axis)
+            ln_o = RMSNorm.init(zero_axis)
             wo = hnn.Linear.init(
                 In=zero_axis,
                 Out=zero2_axis,
