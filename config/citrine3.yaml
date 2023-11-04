@@ -1,0 +1,31 @@
+data: !include data/openwebtext_source.yaml
+model:
+  type: citrine
+  model_dim: 768
+  ff_dim: 2048
+  query_count: 12
+  layer_count: 21
+  norm_eps: 1e-6
+  seq_len: 1024
+  vocab_size: 32000
+  native_batch_size: 3
+  gradient_checkpointing: true
+trainer:
+  wandb:
+    project: "citrine"
+    tags: []
+
+  mp: p=bfloat16,c=bfloat16
+  model_axis_size: 1
+  per_device_parallelism: 63
+
+  train_batch_size: 504
+  num_train_steps: 20000
+optimizer:
+  learning_rate: 1e-3
+  weight_decay: 0.1
+  warmup: 0.01
+  beta1: 0.9
+  beta2: 0.95
+  epsilon: 1e-5
+  max_grad_norm: 1.0
