@@ -199,7 +199,7 @@ class Citrine2(eqx.Module, LmHeadModel[Citrine2Config], StateDictSerializationMi
     def Vocab(self):
         return self.conf.vocab_axis
     def resize_vocab(_self, _new_size, _key):
-        raise Exception("vocab resize not implemented for Citrine")
+        raise Exception("vocab resize not implemented for Citrine2")
     @staticmethod
     def init(conf, key):
         klm_head, kia, kib, koa, kob = jax.random.split(key, 5)
@@ -219,7 +219,7 @@ class Citrine2(eqx.Module, LmHeadModel[Citrine2Config], StateDictSerializationMi
         ln_o = RMSNorm.init(conf.model_axis, conf.norm_eps)
         woa = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=koa, use_bias=False)
         wob = hnn.Linear.init(In=conf.model_axis, Out=conf.embed_axis, key=kob, use_bias=False)
-        return Citrine(
+        return Citrine2(
             conf, lm_head, ln_p, blocks, ln_f, mask, sin, cos,
             ln_i, wia, wib, ln_o, woa, wob
         )
